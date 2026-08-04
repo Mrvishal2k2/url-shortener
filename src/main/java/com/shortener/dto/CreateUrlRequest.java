@@ -1,6 +1,6 @@
 package com.shortener.dto;
 
-import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateUrlRequest {
+    @NotBlank(message = "URL is required")
     private String url;
-    @Nullable
+
     private String shortId;
 }

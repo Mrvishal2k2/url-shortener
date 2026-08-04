@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -36,11 +35,11 @@ public class ShortenerApi {
     @PostMapping("/shorten")
     public ResponseEntity<ShortenResponse> shorten(@Valid @RequestBody CreateUrlRequest url) {
         Url urls = urlService.createShortUrl(url.getUrl(), url.getShortId());
-        log.info(String.valueOf(url));
+
         ShortenResponse response = ShortenResponse.builder()
                 .originalUrl(urls.getUrl())
                 .shortId(urls.getShortId())
-                .shortUrl(baseUrl + "/api/" + urls.getShortId())
+                .shortUrl(baseUrl + "/" + urls.getShortId())
                 .createdAt(urls.getCreatedAt())
                 .expiresAt(urls.getExpiresAt())
                 .build();
@@ -48,16 +47,7 @@ public class ShortenerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/{shortId}")
-    public ResponseEntity<Void> shorten(@PathVariable("shortId") String shortId) throws ShortIdNotFound {
-        String originalUrl = urlService.getOriginalUrl(shortId);
-
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(originalUrl))
-                .build();
-    }
-
-    @GetMapping("/analysis/{shortId}")
+    @GetMapping("/{shortId}/analysis")
     public ResponseEntity<UrlStats> analysis(@PathVariable("shortId") String shortId) throws ShortIdNotFound {
         UrlStats urlStats = urlService.getStats(shortId);
         urlStats.setShortUrl(baseUrl+ "/" + shortId);
