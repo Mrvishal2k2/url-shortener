@@ -16,6 +16,6 @@ public class UrlStats {
     private String shortId;
     private String shortUrl;
     private Instant createdAt;
-    private Instant updatedAt;
+    private Instant expiresAt;
     private Long clickCount;
 }

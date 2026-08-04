@@ -1,5 +1,6 @@
 package com.shortener.service;
 
+import com.shortener.dto.UrlStats;
 import com.shortener.errors.AlreadyExists;
 import com.shortener.errors.ShortIdExpired;
 import com.shortener.errors.ShortIdNotFound;
@@ -68,8 +69,18 @@ public class UrlServiceImpl implements UrlService {
 
 
     @Override
-    public Url getStats(String shortId) {
-        return null;
+    public UrlStats getStats(String shortId) throws ShortIdNotFound {
+
+        Url data = shortenerRepo.findByShortId(shortId).orElseThrow(
+                ()-> new ShortIdNotFound(shortId + "Not found")
+        );
+        UrlStats urlStats = UrlStats.builder()
+                .url(data.getUrl())
+                .clickCount(data.getClickCount())
+                .shortId(data.getShortId())
+                .build();
+
+        return urlStats;
     }
 
     @Override
