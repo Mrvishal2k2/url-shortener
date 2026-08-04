@@ -53,9 +53,9 @@ public class ShortenerApi {
     }
 
     @DeleteMapping("/{shortId}")
-    public ResponseEntity<Void> delete(@PathVariable("shortId") String shortId){
-        urlService.delete(shortId);
+    public ResponseEntity<String> delete(@PathVariable("shortId") String shortId){
+        String response = urlService.delete(shortId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                .body(null);
+                .body(response+ " is deleted");
     }
 }
