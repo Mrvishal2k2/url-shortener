@@ -32,5 +32,6 @@ A URL shortener REST API built with Java and Spring Boot.
 - Create Architecture Diagram
 - Use env way instead of direct properties vars
 - User based shorten functionality
+- Better country level analysis.
 - Better validation & OpenApi & Graphana(optional)
 - Build minimal frontend (Optional)

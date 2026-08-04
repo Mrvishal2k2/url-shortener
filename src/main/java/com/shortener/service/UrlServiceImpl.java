@@ -9,6 +9,7 @@ import com.shortener.model.Url;
 import com.shortener.repository.ShortenerRepo;
 import com.shortener.util.ShortenerUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,9 @@ public class UrlServiceImpl implements UrlService {
     private final ShortenerRepo shortenerRepo;
 
     private final ShortenerUtils shortenerUtils;
+
+    @Value("${app.expiry-guest-days}")
+    private long expiryGuest;
 
     @Override
     @Transactional
@@ -51,7 +55,7 @@ public class UrlServiceImpl implements UrlService {
         Url url = new Url();
         url.setUrl(originalUrl);
         url.setShortId(shortId);
-        url.setExpiresAt(Instant.now().plus(Duration.ofDays(30)));
+        url.setExpiresAt(Instant.now().plus(Duration.ofDays(expiryGuest)));
         return shortenerRepo.save(url);
 
     }
