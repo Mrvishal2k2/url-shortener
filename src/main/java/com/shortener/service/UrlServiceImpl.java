@@ -74,13 +74,14 @@ public class UrlServiceImpl implements UrlService {
         Url data = shortenerRepo.findByShortId(shortId).orElseThrow(
                 ()-> new ShortIdNotFound(shortId + "Not found")
         );
-        UrlStats urlStats = UrlStats.builder()
+
+        return UrlStats.builder()
                 .url(data.getUrl())
                 .clickCount(data.getClickCount())
                 .shortId(data.getShortId())
+                .createdAt(data.getCreatedAt())
+                .expiresAt(data.getExpiresAt())
                 .build();
-
-        return urlStats;
     }
 
     @Override

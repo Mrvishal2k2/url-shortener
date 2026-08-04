@@ -6,7 +6,9 @@ import com.shortener.dto.UrlStats;
 import com.shortener.errors.ShortIdNotFound;
 import com.shortener.model.Url;
 import com.shortener.service.UrlService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api")
@@ -26,17 +29,18 @@ public class ShortenerApi {
 
     @GetMapping("/ping")
     public String ping() {
+        log.info("ping");
         return "pong";
     }
 
     @PostMapping("/shorten")
-    public ResponseEntity<ShortenResponse> shorten(@RequestBody CreateUrlRequest url) {
-        Url urls = urlService.createShortUrl(url.getUrl(),url.getShortId());
-
+    public ResponseEntity<ShortenResponse> shorten(@Valid @RequestBody CreateUrlRequest url) {
+        Url urls = urlService.createShortUrl(url.getUrl(), url.getShortId());
+        log.info(String.valueOf(url));
         ShortenResponse response = ShortenResponse.builder()
                 .originalUrl(urls.getUrl())
                 .shortId(urls.getShortId())
-                .shortUrl(baseUrl+ "/" + urls.getShortId())
+                .shortUrl(baseUrl + "/api/" + urls.getShortId())
                 .createdAt(urls.getCreatedAt())
                 .expiresAt(urls.getExpiresAt())
                 .build();

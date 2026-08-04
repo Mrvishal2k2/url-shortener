@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.Instant;
 
 @Builder
@@ -12,7 +11,6 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShortenResponse {
-    private String url;
     private String shortId;
     private String shortUrl;
     private String originalUrl;
