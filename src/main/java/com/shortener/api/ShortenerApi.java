@@ -1,19 +1,27 @@
 package com.shortener.api;
 
+import com.shortener.dto.CreateUrlRequest;
+import com.shortener.dto.ShortenResponse;
+import com.shortener.errors.ShortIdNotFound;
 import com.shortener.model.Url;
 import com.shortener.service.UrlService;
-import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/api")
 public class ShortenerApi {
 
-    @Autowired
-    private UrlService urlService;
+    private final UrlService urlService;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @GetMapping("/ping")
     public String ping() {
@@ -21,7 +29,33 @@ public class ShortenerApi {
     }
 
     @PostMapping("/shorten")
-    public String shorten(@RequestParam Url url) {
-        return urlService.createShortUrl(url.getUrl());
+    public ResponseEntity<ShortenResponse> shorten(@RequestBody CreateUrlRequest url) {
+        Url urls = urlService.createShortUrl(url.getUrl(),url.getShortId());
+
+        ShortenResponse response = ShortenResponse.builder()
+                .originalUrl(urls.getUrl())
+                .shortId(urls.getShortId())
+                .shortUrl(baseUrl+ "/" + urls.getShortId())
+                .createdAt(urls.getCreatedAt())
+                .expiresAt(urls.getExpiresAt())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{shortId}")
+    public ResponseEntity<Void> shorten(@PathVariable("shortId") String shortId) throws ShortIdNotFound {
+        String originalUrl = urlService.getOriginalUrl(shortId);
+
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(originalUrl))
+                .build();
+    }
+
+    @DeleteMapping("/{shortId}")
+    public ResponseEntity<Void> delete(@PathVariable("shortId") String shortId){
+        urlService.delete(shortId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .body(null);
     }
 }
