@@ -18,7 +18,7 @@ public class RedirectApi {
 
     private final UrlService urlService;
 
-    @GetMapping("/{shortId}")
+    @GetMapping("/{shortId:^(?!scalar|v3|actuator|swagger-ui)[a-zA-Z0-9_-]+$}")
     public ResponseEntity<Void> redirect(@PathVariable("shortId") String shortId){
         String originalUrl = urlService.getOriginalUrl(shortId);
 
