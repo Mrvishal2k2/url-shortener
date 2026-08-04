@@ -9,9 +9,12 @@ A URL shortener REST API built with Java and Spring Boot.
 
 ## Tech Stack
 - Java 21
-- Spring Boot 3 (Web, Data JPA, Validation)
+- Spring Boot 4 (Web, Data JPA, Validation)
 - Lombok
 - Maven
+- Redis
+- MySql
+- Flyway Migration
 
 ## Getting Started
 

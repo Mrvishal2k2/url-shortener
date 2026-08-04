@@ -3,7 +3,6 @@ package com.shortener.api;
 import com.shortener.dto.CreateUrlRequest;
 import com.shortener.dto.ShortenResponse;
 import com.shortener.dto.UrlStats;
-import com.shortener.errors.ShortIdNotFound;
 import com.shortener.model.Url;
 import com.shortener.service.UrlService;
 import jakarta.validation.Valid;
@@ -48,7 +47,7 @@ public class ShortenerApi {
     }
 
     @GetMapping("/{shortId}/analysis")
-    public ResponseEntity<UrlStats> analysis(@PathVariable("shortId") String shortId) throws ShortIdNotFound {
+    public ResponseEntity<UrlStats> analysis(@PathVariable("shortId") String shortId){
         UrlStats urlStats = urlService.getStats(shortId);
         urlStats.setShortUrl(baseUrl+ "/" + shortId);
         return ResponseEntity.status(HttpStatus.OK).body(urlStats);

@@ -1,6 +1,5 @@
 package com.shortener.api;
 
-import com.shortener.errors.ShortIdNotFound;
 import com.shortener.service.UrlService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ public class RedirectApi {
     private final UrlService urlService;
 
     @GetMapping("/{shortId}")
-    public ResponseEntity<Void> shorten(@PathVariable("shortId") String shortId) throws ShortIdNotFound {
+    public ResponseEntity<Void> redirect(@PathVariable("shortId") String shortId){
         String originalUrl = urlService.getOriginalUrl(shortId);
 
         return ResponseEntity.status(HttpStatus.FOUND)

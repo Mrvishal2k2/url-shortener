@@ -2,15 +2,22 @@ package com.shortener.errors;
 
 
 import com.shortener.dto.ErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(NotValidLink.class)
+    public ResponseEntity<ErrorResponse> handleInvalidLink(NotValidLink ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
 
     @ExceptionHandler(AlreadyExists.class)
     public ResponseEntity<ErrorResponse> handleAlreadyExist(AlreadyExists ex) {
@@ -34,7 +41,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong."+ ex.getMessage());
+        log.error(ex.getMessage(), ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong.");
     }
 
 

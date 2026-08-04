@@ -2,6 +2,7 @@ package com.shortener.service;
 
 import com.shortener.dto.UrlStats;
 import com.shortener.errors.AlreadyExists;
+import com.shortener.errors.NotValidLink;
 import com.shortener.errors.ShortIdExpired;
 import com.shortener.errors.ShortIdNotFound;
 import com.shortener.model.Url;
@@ -9,7 +10,9 @@ import com.shortener.repository.ShortenerRepo;
 import com.shortener.util.ShortenerUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -23,7 +26,10 @@ public class UrlServiceImpl implements UrlService {
     private final ShortenerUtils shortenerUtils;
 
     @Override
+    @Transactional
     public Url createShortUrl(String originalUrl, String shortId) {
+
+        validateLink(originalUrl);
         if (shortId != null && !shortId.isBlank()) {
             if (shortenerRepo.existsByShortId(shortId)) {
                 throw new AlreadyExists("Short ID already exists");
@@ -51,7 +57,8 @@ public class UrlServiceImpl implements UrlService {
     }
 
     @Override
-    public String getOriginalUrl(String shortId) throws ShortIdNotFound, ShortIdExpired {
+    @Transactional
+    public String getOriginalUrl(String shortId) {
         Url originalUrl = shortenerRepo.findByShortId(shortId)
                 .orElseThrow(()-> new ShortIdNotFound(shortId));
 
@@ -69,10 +76,11 @@ public class UrlServiceImpl implements UrlService {
 
 
     @Override
-    public UrlStats getStats(String shortId) throws ShortIdNotFound {
+    @Transactional(readOnly = true)
+    public UrlStats getStats(String shortId){
 
         Url data = shortenerRepo.findByShortId(shortId).orElseThrow(
-                ()-> new ShortIdNotFound(shortId + "Not found")
+                ()-> new ShortIdNotFound(shortId + " Not found")
         );
 
         return UrlStats.builder()
@@ -85,9 +93,28 @@ public class UrlServiceImpl implements UrlService {
     }
 
     @Override
+    @Transactional
     public String delete(String shortId) {
         Optional<Url> urlOpt = shortenerRepo.findByShortId(shortId);
         urlOpt.ifPresent(shortenerRepo::delete);
         return shortId;
+    }
+
+    private void validateLink(String link) {
+        if (link == null || link.isBlank()) {
+            throw new NotValidLink("URL cannot be empty");
+        }
+        try {
+            URI uri = URI.create(link);
+            String scheme = uri.getScheme();
+            boolean isValid = ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
+                    && uri.getHost() != null;
+
+            if (!isValid) {
+                throw new NotValidLink("Invalid URL scheme or missing host: " + link);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new NotValidLink("Malformed URL: " + link);
+        }
     }
 }
