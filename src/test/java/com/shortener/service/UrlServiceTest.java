@@ -180,7 +180,8 @@ public class UrlServiceTest {
         Assertions.assertEquals("https://google.com", result);
 
         Mockito.verify(shortenerRepo).findByShortId("google");
-        Mockito.verify(shortenerRepo).save(Mockito.any(Url.class));
+        Mockito.verify(shortenerRepo).incrementClickCount("google");
+        Mockito.verify(shortenerRepo, Mockito.never()).save(Mockito.any());
     }
 
     @Test
@@ -245,9 +246,9 @@ public class UrlServiceTest {
         Assertions.assertEquals(2, result.getEntriesCount());
         Assertions.assertEquals(2, result.getUrlMapping().size());
 
-        Assertions.assertEquals("google", result.getUrlMapping().get(0).getShortId());
+        Assertions.assertEquals("google", result.getUrlMapping().getFirst().getShortId());
         Assertions.assertEquals("http://localhost:8080/google",
-                result.getUrlMapping().get(0).getShortUrl());
+                result.getUrlMapping().getFirst().getShortUrl());
 
         Mockito.verify(shortenerRepo).findAll();
     }

@@ -73,7 +73,7 @@ public class ShortenerApi {
     public ResponseEntity<String> delete(@PathVariable("shortId") String shortId){
 
         if (!PATTERN.matcher(shortId).matches()) {
-            throw new ShortIdNotFound("Invalid shortId");
+            throw new ShortIdNotFound(shortId);
         }
 
         String response = urlService.delete(shortId);

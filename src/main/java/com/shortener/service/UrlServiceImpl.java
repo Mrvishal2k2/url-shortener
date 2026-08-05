@@ -12,7 +12,6 @@ import com.shortener.util.ShortenerUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,7 +80,7 @@ public class UrlServiceImpl implements UrlService {
         if (originalUrl.getExpiresAt().isBefore(Instant.now())) {
             throw new ShortIdExpired(shortId);
         }
-        updateClickCount(originalUrl);
+        shortenerRepo.incrementClickCount(shortId);
 
         return originalUrl.getUrl();
     }
@@ -109,16 +108,6 @@ public class UrlServiceImpl implements UrlService {
         return allUrls;
     }
 
-
-    @Async
-    protected void updateClickCount(Url url){
-        try {
-            url.setClickCount(url.getClickCount() + 1);
-            shortenerRepo.save(url);
-        }catch (Exception e){
-            log.info("Updating click count failed for {}", url.getShortId());
-        }
-    }
 
     @Override
     @Transactional(readOnly = true)
