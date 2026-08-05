@@ -1,5 +1,6 @@
 package com.shortener.api;
 
+import com.shortener.dto.AllUrls;
 import com.shortener.dto.CreateUrlRequest;
 import com.shortener.dto.ShortenResponse;
 import com.shortener.dto.UrlStats;
@@ -53,6 +54,10 @@ public class ShortenerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<AllUrls> getAllUrls() {
+        return ResponseEntity.ok(urlService.getAllUrls());
+    }
 
     @GetMapping("/{shortId}/analysis")
     public ResponseEntity<UrlStats> analysis(@PathVariable("shortId") String shortId){

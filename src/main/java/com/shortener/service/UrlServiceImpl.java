@@ -1,5 +1,6 @@
 package com.shortener.service;
 
+import com.shortener.dto.AllUrls;
 import com.shortener.dto.UrlStats;
 import com.shortener.errors.AlreadyExists;
 import com.shortener.errors.NotValidLink;
@@ -18,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -31,6 +34,9 @@ public class UrlServiceImpl implements UrlService {
 
     @Value("${app.expiry-guest-days}")
     private long expiryGuest;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @Override
     @Transactional
@@ -78,6 +84,30 @@ public class UrlServiceImpl implements UrlService {
         updateClickCount(originalUrl);
 
         return originalUrl.getUrl();
+    }
+
+    @Override
+    public AllUrls getAllUrls() {
+        List<Url> allData = shortenerRepo.findAll();
+        AllUrls allUrls = new AllUrls();
+
+        List<UrlStats> urlStats = new ArrayList<>();
+
+        for (Url url : allData) {
+            UrlStats urlStat = new UrlStats();
+            urlStat.setUrl(url.getUrl());
+            urlStat.setShortId(url.getShortId());
+            urlStat.setShortUrl(baseUrl +"/"+ url.getShortId());
+            urlStat.setCreatedAt(url.getCreatedAt());
+            urlStat.setExpiresAt(url.getExpiresAt());
+            urlStat.setClickCount(url.getClickCount());
+
+
+            urlStats.add(urlStat);
+        }
+        allUrls.setEntriesCount(urlStats.size());
+        allUrls.setUrlMapping(urlStats);
+        return allUrls;
     }
 
 
