@@ -33,5 +33,6 @@ A URL shortener REST API built with Java and Spring Boot.
 - Use env way instead of direct properties vars
 - User based shorten functionality
 - Better country level analysis.
-- Better validation & OpenApi & Graphana(optional)
+- Better validation
+- [✅] OpenApi/Swagger & Graphana
 - Build minimal frontend (Optional)
