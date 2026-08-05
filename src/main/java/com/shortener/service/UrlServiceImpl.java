@@ -1,6 +1,7 @@
 package com.shortener.service;
 
 import com.shortener.dto.AllUrls;
+import com.shortener.dto.CachedUrl;
 import com.shortener.dto.UrlStats;
 import com.shortener.errors.AlreadyExists;
 import com.shortener.errors.NotValidLink;
@@ -12,6 +13,7 @@ import com.shortener.util.ShortenerUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,8 @@ public class UrlServiceImpl implements UrlService {
     private final ShortenerRepo shortenerRepo;
 
     private final ShortenerUtils shortenerUtils;
+
+    private final UrlLookupService urlLookupService;
 
     @Value("${app.expiry-guest-days}")
     private long expiryGuest;
@@ -71,18 +75,16 @@ public class UrlServiceImpl implements UrlService {
     @Override
     @Transactional
     public String getOriginalUrl(String shortId) {
-        Url originalUrl = shortenerRepo.findByShortId(shortId)
-                .orElseThrow(()-> new ShortIdNotFound(shortId));
+        CachedUrl cached = urlLookupService.findByShortId(shortId);
 
-        if(!originalUrl.isActive()){
+        if (!cached.active()) {
             throw new ShortIdNotFound(shortId);
         }
-        if (originalUrl.getExpiresAt().isBefore(Instant.now())) {
+        if (cached.expiresAt().isBefore(Instant.now())) {
             throw new ShortIdExpired(shortId);
         }
         shortenerRepo.incrementClickCount(shortId);
-
-        return originalUrl.getUrl();
+        return cached.url();
     }
 
     @Override
@@ -129,6 +131,7 @@ public class UrlServiceImpl implements UrlService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "urls", key = "#shortId")
     public String delete(String shortId) {
         Optional<Url> urlOpt = shortenerRepo.findByShortId(shortId);
         urlOpt.ifPresent(shortenerRepo::delete);
