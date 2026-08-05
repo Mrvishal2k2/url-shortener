@@ -27,12 +27,11 @@ A URL shortener REST API built with Java and Spring Boot.
 ## TODO
 - Add Redis caching
 - Build test cases and increase coverage
-- Implement wait based shortRedirect as well
 - Dockerize and deploy at my server.
 - Create Architecture Diagram
 - Use env way instead of direct properties vars
 - User based shorten functionality
 - Better country level analysis.
 - Better validation
-- [✅] OpenApi/Swagger & Graphana
 - Build minimal frontend (Optional)
+- Implement wait based shortRedirect(if built frontend)
