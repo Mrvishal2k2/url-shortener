@@ -1,6 +1,7 @@
 package com.shortener.service;
 
 import com.shortener.dto.AllUrls;
+import com.shortener.dto.CachedUrl;
 import com.shortener.dto.UrlStats;
 import com.shortener.errors.AlreadyExists;
 import com.shortener.errors.NotValidLink;
@@ -37,6 +38,8 @@ public class UrlServiceTest {
     UrlServiceImpl urlService;
     @Mock
     ShortenerUtils shortenerUtils;
+    @Mock
+    UrlLookupService urlLookupService;
 
     @BeforeEach
     void setup() {
@@ -165,21 +168,20 @@ public class UrlServiceTest {
     @Test
     void getOriginalUrl_ShouldReturnOriginalUrl() {
 
-        Url url = new Url();
-        url.setUrl("https://google.com");
-        url.setShortId("google");
-        url.setActive(true);
-        url.setClickCount(0L);
-        url.setExpiresAt(Instant.now().plus(Duration.ofDays(1)));
+        CachedUrl cached = new CachedUrl(
+                "https://google.com",
+                Instant.now().plus(Duration.ofDays(1)),
+                true
+        );
 
-        Mockito.when(shortenerRepo.findByShortId("google"))
-                .thenReturn(Optional.of(url));
+        Mockito.when(urlLookupService.findByShortId("google"))
+                .thenReturn(cached);
 
         String result = urlService.getOriginalUrl("google");
 
         Assertions.assertEquals("https://google.com", result);
 
-        Mockito.verify(shortenerRepo).findByShortId("google");
+        Mockito.verify(urlLookupService).findByShortId("google");
         Mockito.verify(shortenerRepo).incrementClickCount("google");
         Mockito.verify(shortenerRepo, Mockito.never()).save(Mockito.any());
     }
@@ -187,37 +189,37 @@ public class UrlServiceTest {
     @Test
     void getOriginalUrl_ShouldThrow_WhenShortIdNotFound() {
 
-        Mockito.when(shortenerRepo.findByShortId("google"))
-                .thenReturn(Optional.empty());
+        Mockito.when(urlLookupService.findByShortId("google"))
+                .thenThrow(new ShortIdNotFound("google"));
 
         Assertions.assertThrows(
                 ShortIdNotFound.class,
                 () -> urlService.getOriginalUrl("google")
         );
 
-        Mockito.verify(shortenerRepo).findByShortId("google");
-        Mockito.verify(shortenerRepo, Mockito.never()).save(Mockito.any());
+        Mockito.verify(urlLookupService).findByShortId("google");
+        Mockito.verify(shortenerRepo, Mockito.never()).incrementClickCount(Mockito.any());
     }
 
 
     @Test
     void getOriginalUrl_ShouldThrow_WhenExpired() {
 
-        Url url = new Url();
-        url.setUrl("https://google.com");
-        url.setShortId("google");
-        url.setActive(true);
-        url.setExpiresAt(Instant.now().minus(Duration.ofDays(1)));
+        CachedUrl cached = new CachedUrl(
+                "https://google.com",
+                Instant.now().minus(Duration.ofDays(1)),
+                true
+        );
 
-        Mockito.when(shortenerRepo.findByShortId("google"))
-                .thenReturn(Optional.of(url));
+        Mockito.when(urlLookupService.findByShortId("google"))
+                .thenReturn(cached);
 
         Assertions.assertThrows(
                 ShortIdExpired.class,
                 () -> urlService.getOriginalUrl("google")
         );
 
-        Mockito.verify(shortenerRepo, Mockito.never()).save(Mockito.any());
+        Mockito.verify(shortenerRepo, Mockito.never()).incrementClickCount(Mockito.any());
     }
 
 
