@@ -1,5 +1,7 @@
 # URL Shortener
 
+[![CI](https://github.com/Mrvishal2k2/url-shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/Mrvishal2k2/url-shortener/actions/workflows/ci.yml)
+
 A URL shortener REST API built with Java 21 and Spring Boot 4 — backed by MySQL, cached in Redis, with metrics exposed to Prometheus and Grafana.
 
 ## Features
