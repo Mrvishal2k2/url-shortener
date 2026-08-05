@@ -70,14 +70,13 @@ public class ShortenerApi {
     }
 
     @DeleteMapping("/{shortId}")
-    public ResponseEntity<String> delete(@PathVariable("shortId") String shortId){
+    public ResponseEntity<Void> delete(@PathVariable("shortId") String shortId){
 
         if (!PATTERN.matcher(shortId).matches()) {
             throw new ShortIdNotFound(shortId);
         }
 
-        String response = urlService.delete(shortId);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                .body(response+ " is deleted");
+        urlService.delete(shortId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
     }
 }

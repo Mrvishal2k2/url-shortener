@@ -1,4 +1,4 @@
-package com.shortener.util;
+package com.shortener.config;
 
 import com.shortener.dto.CachedUrl;
 import lombok.extern.slf4j.Slf4j;
