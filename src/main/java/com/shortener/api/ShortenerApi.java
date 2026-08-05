@@ -66,7 +66,6 @@ public class ShortenerApi {
                 throw new ShortIdNotFound("Invalid shortId");
         }
         UrlStats urlStats = urlService.getStats(shortId);
-        urlStats.setShortUrl(baseUrl+ "/" + shortId);
         return ResponseEntity.status(HttpStatus.OK).body(urlStats);
     }
 

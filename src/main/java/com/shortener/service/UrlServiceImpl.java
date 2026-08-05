@@ -102,7 +102,6 @@ public class UrlServiceImpl implements UrlService {
             urlStat.setExpiresAt(url.getExpiresAt());
             urlStat.setClickCount(url.getClickCount());
 
-
             urlStats.add(urlStat);
         }
         allUrls.setEntriesCount(urlStats.size());
@@ -133,6 +132,7 @@ public class UrlServiceImpl implements UrlService {
                 .url(data.getUrl())
                 .clickCount(data.getClickCount())
                 .shortId(data.getShortId())
+                .shortUrl(baseUrl + "/" + shortId)
                 .createdAt(data.getCreatedAt())
                 .expiresAt(data.getExpiresAt())
                 .build();
