@@ -29,7 +29,7 @@ public class ShortenerApi {
     @Value("${app.base-url}")
     private String baseUrl;
 
-    final Pattern PATTERN =
+    private final Pattern PATTERN =
             Pattern.compile ("^[A-Za-z0-9_-]{3,10}$");
 
 
