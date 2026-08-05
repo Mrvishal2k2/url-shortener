@@ -1,4 +1,4 @@
-# Shortener
+# URL Shortener
 
 A URL shortener REST API built with Java 21 and Spring Boot 4 — backed by MySQL, cached in Redis, with metrics exposed to Prometheus and Grafana.
 
