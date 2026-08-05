@@ -34,5 +34,5 @@ build/
 
 *.log
 .serena/
-
+app.log*
 .env

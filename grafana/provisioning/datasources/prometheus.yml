@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    # "prometheus" is the compose service name, resolved on the shared network.
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
