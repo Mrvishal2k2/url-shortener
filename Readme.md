@@ -78,6 +78,38 @@ The dashboard covers:
 
 Credentials can be overridden with `GRAFANA_USER` / `GRAFANA_PASSWORD`.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Client(("Client"))
+
+    subgraph app["Application"]
+        API["Spring Boot API<br/>shorten · redirect · stats"]
+    end
+
+    subgraph data["Data"]
+        Redis[("Redis<br/>cache · 10m TTL")]
+        MySQL[("MySQL<br/>Flyway-managed")]
+    end
+
+    subgraph obs["Observability"]
+        Prom["Prometheus"]
+        Graf["Grafana"]
+    end
+
+    Client -->|"POST /api/shorten"| API
+    Client -->|"GET /{shortId}"| API
+
+    API -->|"1 . cache lookup"| Redis
+    API -->|"2 . miss / write / click count"| MySQL
+
+    Prom -.->|"scrape /actuator/prometheus"| API
+    Graf -->|"query"| Prom
+```
+
+A redirect checks Redis first and falls back to MySQL on a miss. Click counts always go to MySQL as an atomic increment, so they stay correct even when the lookup is served from cache. If Redis is unreachable, requests fall through to MySQL instead of failing.
+
 ## Design Notes
 
 **Cache-aside on redirects.** Redirects are the hot path, so `shortId → URL` lookups are cached in Redis with a 10-minute TTL. Only a small immutable record is cached — not the JPA entity — so the cache doesn't break when the entity changes shape. Expiry is re-checked in memory after the cache read, so an expired link still returns `410` even on a cache hit.
@@ -118,6 +150,7 @@ Needs MySQL and Redis running on their default ports, and a `urlshortener` datab
 ./mvnw verify
 ```
 
+
 Unit tests cover the service, controllers, and ID generation with Mockito. Integration tests use Testcontainers, so Docker must be running.
 
 ## Scope of Improvement
@@ -126,5 +159,8 @@ Unit tests cover the service, controllers, and ID generation with Mockito. Integ
 - Rate limiting
 - Advanced analytics based on click source
 - Pagination for `/api/all`
-- Architecture diagram
 - Minimal frontend, with a wait-based redirect page
+
+## License
+
+[MIT](LICENSE)
