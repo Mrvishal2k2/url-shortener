@@ -1,0 +1,619 @@
+{
+  "info": {
+    "name": "URL Shortener",
+    "description": "Complete request collection for the URL Shortener API (Spring Boot).\n\n## Usage\n\n1. Start the stack: `docker compose up --build`\n2. Import this file into Postman (or Insomnia / Bruno / Hoppscotch — all read Postman v2.1).\n3. Override the `baseUrl` collection variable if the API is not on `http://localhost:8080`.\n\nRunning **Shorten URL (auto-generated id)** stores the returned id in the `shortId` collection variable, so every request below it (`analysis`, `redirect`, `delete`) works without editing anything. **Shorten URL (custom id)** stores its id in `customShortId`.\n\nThe whole collection passes top-to-bottom in the Collection Runner (or `newman run`). The **Cleanup** folder deletes both links at the end, so runs are repeatable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Base URL of the API. Matches app.base-url / APP_BASE_URL."
+    },
+    {
+      "key": "longUrl",
+      "value": "https://spring.io/projects/spring-boot",
+      "type": "string",
+      "description": "URL used as the shorten target in the sample requests."
+    },
+    {
+      "key": "shortId",
+      "value": "",
+      "type": "string",
+      "description": "Auto-populated by 'Shorten URL (auto-generated id)'."
+    },
+    {
+      "key": "customShortId",
+      "value": "my-link",
+      "type": "string",
+      "description": "Custom id used by 'Shorten URL (custom id)'. 3-10 chars, [a-zA-Z0-9_-]."
+    }
+  ],
+  "item": [
+    {
+      "name": "URLs",
+      "description": "Create, inspect and delete short links. All endpoints live under `/api`.",
+      "item": [
+        {
+          "name": "Shorten URL (auto-generated id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"response carries the short link\", function () {",
+                  "    pm.expect(body).to.have.property(\"shortId\");",
+                  "    pm.expect(body).to.have.property(\"shortUrl\");",
+                  "    pm.expect(body.originalUrl).to.eql(pm.collectionVariables.get(\"longUrl\"));",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"shortId\", body.shortId);",
+                  "console.log(\"shortId ->\", body.shortId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{longUrl}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shorten",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shorten"]
+            },
+            "description": "Creates a short link with a server-generated id.\n\n**Body**\n\n| Field | Required | Rules |\n|---|---|---|\n| `url` | yes | non-blank, max 2048 chars, must be an `http`/`https` URL |\n| `shortId` | no | omit to have one generated |\n\n**Responses**\n\n- `201` — `ShortenResponse` (`shortId`, `shortUrl`, `originalUrl`, `createdAt`, `expiresAt`)\n- `400` — url missing or not a valid http(s) link\n\nLinks expire after `app.expiry-guest-days` (30) days."
+          },
+          "response": []
+        },
+        {
+          "name": "Shorten URL (custom id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"keeps the requested id\", function () {",
+                  "    pm.expect(body.shortId).to.eql(pm.collectionVariables.get(\"customShortId\"));",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"customShortId\", body.shortId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{longUrl}}\",\n  \"shortId\": \"{{customShortId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shorten",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shorten"]
+            },
+            "description": "Creates a short link with a caller-supplied id.\n\n`shortId` must match `^[a-zA-Z0-9_-]{3,10}$`.\n\n**Responses**\n\n- `201` — created\n- `409` — that `shortId` is already taken\n- `400` — invalid url\n\nRe-running this request after the first success returns `409` (see *Error cases → Duplicate custom id*)."
+          },
+          "response": []
+        },
+        {
+          "name": "List all URLs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"returns a count and the mappings\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"entriesCount\");",
+                  "    pm.expect(body.urlMapping).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "all"]
+            },
+            "description": "Returns every stored mapping.\n\n**Response `200`** — `{ \"entriesCount\": <long>, \"urlMapping\": [UrlStats, ...] }`\n\nNot paginated — the full list comes back in one response."
+          },
+          "response": []
+        },
+        {
+          "name": "Link stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"reports clicks and timestamps\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.shortId).to.eql(pm.collectionVariables.get(\"shortId\"));",
+                  "    pm.expect(body).to.have.property(\"clickCount\");",
+                  "    pm.expect(body).to.have.property(\"createdAt\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{shortId}}/analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{shortId}}", "analysis"]
+            },
+            "description": "Stats for a single short link.\n\n**Response `200`** — `UrlStats` (`url`, `shortId`, `shortUrl`, `createdAt`, `expiresAt`, `clickCount`)\n\n**Response `404`** — unknown id, or an id that doesn't match `^[A-Za-z0-9_-]{3,10}$`\n\nRun the redirect request first to see `clickCount` move."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Redirect",
+      "description": "The public hot path — served from Redis when warm, MySQL otherwise.",
+      "item": [
+        {
+          "name": "Follow short link",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"302 Found\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "",
+                  "pm.test(\"Location points at the original url\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Location\")).to.eql(",
+                  "        pm.collectionVariables.get(\"longUrl\")",
+                  "    );",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{shortId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{shortId}}"]
+            },
+            "description": "Resolves a short id and redirects to the original URL, incrementing `clickCount`.\n\n**Responses**\n\n- `302` — `Location` header holds the original URL\n- `404` — unknown id\n- `410` — the link has expired\n\nAuto-redirect is disabled on this request so the `302` and its `Location` header are visible. Turn it back on under *Settings → Automatically follow redirects* to land on the target page."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error cases",
+      "description": "Each request here is expected to fail, and asserts the failure shape. Errors share one body: `{ timestamp, status, error, message }`.",
+      "item": [
+        {
+          "name": "Invalid URL scheme (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"returns the standard error body\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql(400);",
+                  "    pm.expect(body).to.have.property(\"timestamp\");",
+                  "    pm.expect(body).to.have.property(\"message\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"javascript:alert(1)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shorten",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shorten"]
+            },
+            "description": "Only `http` and `https` targets are accepted. `javascript:` and `data:` URLs are rejected — shortening them would turn the service into a stored-XSS vector."
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate custom id (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{longUrl}}\",\n  \"shortId\": \"{{customShortId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shorten",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shorten"]
+            },
+            "description": "Re-claims the id created by *URLs → Shorten URL (custom id)*, which must already have run. Short ids are unique, so this returns `409 Conflict`."
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown short id (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/zzz999/analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "zzz999", "analysis"]
+            },
+            "description": "Well-formed id that was never created."
+          },
+          "response": []
+        },
+        {
+          "name": "Malformed short id (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/a!/analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "a!", "analysis"]
+            },
+            "description": "Ids are validated against `^[A-Za-z0-9_-]{3,10}$` before any lookup happens, so anything outside that shape is rejected as `404` rather than reaching the database."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health & docs",
+      "description": "Liveness, generated API docs and the metrics Prometheus scrapes.",
+      "item": [
+        {
+          "name": "Ping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"answers pong\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"pong\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ping"]
+            },
+            "description": "Plain-text liveness check. Returns `pong`."
+          },
+          "response": []
+        },
+        {
+          "name": "Actuator health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"status is UP\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"UP\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Aggregate health, including the MySQL and Redis components.\n\nReturns `200 {\"status\":\"UP\"}` when both are reachable, and `503 {\"status\":\"DOWN\"}` if either is not — so this request fails when the app runs without Redis, even though the API itself keeps serving from MySQL."
+          },
+          "response": []
+        },
+        {
+          "name": "Actuator info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "info"]
+            },
+            "description": "Build and environment info exposed by Actuator."
+          },
+          "response": []
+        },
+        {
+          "name": "Actuator metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "metrics"]
+            },
+            "description": "Lists available Micrometer meters. Append a name for detail, e.g. `/actuator/metrics/http.server.requests`."
+          },
+          "response": []
+        },
+        {
+          "name": "Prometheus metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/prometheus",
+              "host": ["{{baseUrl}}"],
+              "path": ["actuator", "prometheus"]
+            },
+            "description": "Metrics in Prometheus exposition format — the endpoint Prometheus scrapes every 15s."
+          },
+          "response": []
+        },
+        {
+          "name": "OpenAPI spec",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"is an OpenAPI document\", function () {",
+                  "    pm.expect(pm.response.json()).to.have.property(\"openapi\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/api-docs",
+              "host": ["{{baseUrl}}"],
+              "path": ["v3", "api-docs"]
+            },
+            "description": "Raw OpenAPI document generated by springdoc. Import it to regenerate this collection or to build a client."
+          },
+          "response": []
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/swagger-ui.html",
+              "host": ["{{baseUrl}}"],
+              "path": ["swagger-ui.html"]
+            },
+            "description": "Browser API console. Open this URL in a browser rather than reading the response here."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "description": "Deletes the two links the collection created, so a full run leaves no rows behind and can be repeated (without this, the custom id would already be taken on the next run).",
+      "item": [
+        {
+          "name": "Delete link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test(\"empty body\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{shortId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{shortId}}"]
+            },
+            "description": "Deletes the auto-generated link.\n\n**Responses**\n\n- `204` — no body. Delete is idempotent: an id that doesn't exist also returns `204`, not `404`.\n- `404` — only when the id fails the `^[A-Za-z0-9_-]{3,10}$` check, which is rejected before the lookup.\n\nAlso evicts the id from the Redis cache."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete custom link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{customShortId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{customShortId}}"]
+            },
+            "description": "Frees the custom id so *Shorten URL (custom id)* and the `409` case both work again on the next run."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
