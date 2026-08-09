@@ -15,6 +15,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
     restart: unless-stopped
     networks:
       - dokploy-network
